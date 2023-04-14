@@ -1,5 +1,5 @@
 <annotation>
-	<folder></folder>
+	<folder />
 	<filename>analysisVideo_8vKudGXGevdRoxLYw_gyeSoPDqDhHxoviH7_20_jpg.rf.5e09629d9e007eb561b62e919cda0d27.jpg</filename>
 	<path>analysisVideo_8vKudGXGevdRoxLYw_gyeSoPDqDhHxoviH7_20_jpg.rf.5e09629d9e007eb561b62e919cda0d27.jpg</path>
 	<source>
@@ -12,7 +12,7 @@
 	</size>
 	<segmented>0</segmented>
 	<object>
-		<name>lower_body</name>
+		<name changed="yes">lower_body</name>
 		<pose>Unspecified</pose>
 		<truncated>0</truncated>
 		<difficult>0</difficult>
