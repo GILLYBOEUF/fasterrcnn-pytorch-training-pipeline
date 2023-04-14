@@ -1,0 +1,27 @@
+<annotation>
+	<folder></folder>
+	<filename>analysisVideo_8vKudGXGevdRoxLYw_gyeSoPDqDhHxoviH7_15_jpg.rf.774df8a06ee076869d27871420dfcc04.jpg</filename>
+	<path>analysisVideo_8vKudGXGevdRoxLYw_gyeSoPDqDhHxoviH7_15_jpg.rf.774df8a06ee076869d27871420dfcc04.jpg</path>
+	<source>
+		<database>roboflow.ai</database>
+	</source>
+	<size>
+		<width>720</width>
+		<height>480</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>lower_body</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<occluded>0</occluded>
+		<bndbox>
+			<xmin>88</xmin>
+			<xmax>527</xmax>
+			<ymin>231</ymin>
+			<ymax>375</ymax>
+		</bndbox>
+	</object>
+</annotation>
