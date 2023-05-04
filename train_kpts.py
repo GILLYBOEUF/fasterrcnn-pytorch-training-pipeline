@@ -48,11 +48,11 @@ from utils.logging import (
     wandb_init
 )
 
-import keypoint_rcnn_training_pytorch.transforms, keypoint_rcnn_training_pytorch.utils,  keypoint_rcnn_training_pytorch.dataset, keypoint_rcnn_training_pytorch.visualize
-from keypoint_rcnn_training_pytorch.transforms import train_transform, test_transform
-from keypoint_rcnn_training_pytorch.utils import collate_fn
-from keypoint_rcnn_training_pytorch.dataset import ClassDataset
-from keypoint_rcnn_training_pytorch.visualize import visualize
+import keypoint_rcnn.transforms, keypoint_rcnn.utils,  keypoint_rcnn.dataset, keypoint_rcnn.visualize
+from keypoint_rcnn.transforms import train_transform, test_transform
+from keypoint_rcnn.utils import collate_fn
+from keypoint_rcnn.dataset import ClassDataset
+from keypoint_rcnn.visualize import visualize
 
 
 torch.multiprocessing.set_sharing_strategy('file_system')
