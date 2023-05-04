@@ -15,6 +15,18 @@ def inference_annotations(
     scores = outputs[0]['scores'].data.numpy()
     # Filter out boxes according to `detection_threshold`.
     boxes = boxes[scores >= detection_threshold].astype(np.int32)
+      # Filter out boxes according to area
+    def area (box):
+      a = (box[2]-box[0])*(box[3]-box[1]) 
+      return a
+    
+    if len(boxes) != 0:
+      max_area_ = boxes[0]
+      for box in boxes:
+        if area(box) > area(max_area_):
+          max_area_ = box
+      boxes = [max_area_]
+      
     draw_boxes = boxes.copy()
     # Get all the predicited class names.
     pred_classes = [classes[i] for i in outputs[0]['labels'].cpu().numpy()]
