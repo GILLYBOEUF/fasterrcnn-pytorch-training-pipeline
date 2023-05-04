@@ -21,7 +21,7 @@ def create_model(num_classes=2, pretrained=True, coco_model=False):
     in_features = faster_model.roi_heads.box_predictor.cls_score.in_features
     # define a new head for the detector with required number of classes
     faster_model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
-    weights = "/Users/marie-alix/Documents/PDM/MoveUP/Pose3D/fasterrcnn-pytorch-training-pipeline/best_model.pth"
+    weights = "best_model.pth"
     DEVICE = "cpu"
     # Load the pretrained checkpoint.
     checkpoint = torch.load(weights, map_location=DEVICE) 
