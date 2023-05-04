@@ -1,5 +1,5 @@
 from models import *
-
+from models import keypointrcnn_resnet50_fpn
 def return_fasterrcnn_resnet50_fpn(
     num_classes, pretrained=True, coco_model=False
 ):
