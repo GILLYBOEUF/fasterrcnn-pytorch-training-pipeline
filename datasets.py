@@ -118,13 +118,13 @@ class CustomDataset(Dataset):
             labels.append(self.classes.index(member.find('name').text))
             
             # xmin = left corner x-coordinates
-            xmin = float(member.find('bndbox').find('xmin').text)
+            xmin = float(member.find('bndbox').find('xmin').text - 10) # -10 to increase the bounding box size
             # xmax = right corner x-coordinates
-            xmax = float(member.find('bndbox').find('xmax').text)
+            xmax = float(member.find('bndbox').find('xmax').text + 10) # +10 to increase the bounding box size
             # ymin = left corner y-coordinates
-            ymin = float(member.find('bndbox').find('ymin').text)
+            ymin = float(member.find('bndbox').find('ymin').text - 10) # -10 to increase the bounding box size
             # ymax = right corner y-coordinates
-            ymax = float(member.find('bndbox').find('ymax').text)
+            ymax = float(member.find('bndbox').find('ymax').text + 10) # +10 to increase the bounding box size
 
             xmin, ymin, xmax, ymax = self.check_image_and_annotation(
                 xmin, 
