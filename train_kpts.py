@@ -304,7 +304,7 @@ def main(args):
     # iterations till ena and plot graphs for all iterations.
     train_loss_list = []
     loss_cls_list = []
-    loss_box_reg_list = []
+    loss_kpts_reg_list = []
     loss_objectness_list = []
     loss_rpn_list = []
     train_loss_list_epoch = []
@@ -346,9 +346,12 @@ def main(args):
 
         # Change output features for keypoint predictor
         # according to current dataset classes.
-        in_features = model.roi_heads.keypoint_predictor.kps_score_lowres.in_features
+        in_features = model.roi_heads.keypoint_predictor.kps_score_lowres.weight.shape[1] # in_features is not directly available for the ConvTranspose2d layer in PyTorch. 
+                                                                                          # The in_features attribute is typically used with linear layers (e.g., nn.Linear) 
+                                                                                          # to represent the number of input features or dimensions.
+
         model.roi_heads.keypoint_predictor.kps_score_lowres = torch.nn.Linear(
-            in_features=in_features, out_features=NUM_CLASSES*6, bias=True
+            in_channels=in_features, out_features=NUM_CLASSES*6, bias=True
         )
         model.roi_heads.keypoint_predictor.kps_score = torch.nn.Linear(
             in_features=in_features, out_features=NUM_CLASSES*6, bias=True
@@ -420,7 +423,7 @@ def main(args):
 
         _, batch_loss_list, \
             batch_loss_cls_list, \
-            batch_loss_box_reg_list, \
+            batch_loss_kpts_reg_list, \
             batch_loss_objectness_list, \
             batch_loss_rpn_list = train_one_epoch(
             model, 
@@ -446,7 +449,7 @@ def main(args):
         # Append the current epoch's batch-wise losses to the `train_loss_list`.
         train_loss_list.extend(batch_loss_list)
         loss_cls_list.append(np.mean(np.array(batch_loss_cls_list,)))
-        loss_box_reg_list.append(np.mean(np.array(batch_loss_box_reg_list)))
+        loss_kpts_reg_list.append(np.mean(np.array(batch_loss_kpts_reg_list)))
         loss_objectness_list.append(np.mean(np.array(batch_loss_objectness_list)))
         loss_rpn_list.append(np.mean(np.array(batch_loss_rpn_list)))
 
@@ -475,10 +478,10 @@ def main(args):
         )
         save_loss_plot(
             OUT_DIR, 
-            loss_box_reg_list, 
+            loss_kpts_reg_list, 
             'epochs', 
-            'loss bbox reg',
-            save_name='train_loss_bbox_reg'
+            'loss kpts reg',
+            save_name='train_loss_kpts_reg'
         )
         save_loss_plot(
             OUT_DIR,
@@ -491,8 +494,8 @@ def main(args):
             OUT_DIR,
             loss_rpn_list,
             'epochs',
-            'loss rpn bbox',
-            save_name='train_loss_rpn_bbox'
+            'loss rpn kpts',
+            save_name='train_loss_rpn_kpts'
         )
 
         # Save mAP plots.
@@ -526,7 +529,7 @@ def main(args):
             epoch,
             train_loss_list,
             loss_cls_list,
-            loss_box_reg_list,
+            loss_kpts_reg_list,
             loss_objectness_list,
             loss_rpn_list
         )
@@ -537,7 +540,7 @@ def main(args):
                 train_loss_hist.value,
                 batch_loss_list,
                 loss_cls_list,
-                loss_box_reg_list,
+                loss_kpts_reg_list,
                 loss_objectness_list,
                 loss_rpn_list,
                 stats[1],
@@ -582,4 +585,3 @@ def main(args):
 if __name__ == '__main__':
     args = parse_opt()
     main(args)
-
