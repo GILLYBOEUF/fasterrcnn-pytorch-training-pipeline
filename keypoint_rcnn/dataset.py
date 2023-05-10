@@ -30,7 +30,24 @@ class ClassDataset(Dataset):
             keypoints_original = data['keypoints']
             
             # All objects are lower body
-            bboxes_labels_original = ['lower body' for _ in bboxes_original]            
+            bboxes_labels_original = ['lower body' for _ in bboxes_original]
+            CLASS_LABEL = [
+                    'left_hip',
+                    'right_hip',
+                    'left_knee',
+                    'right_knee',
+                    'left_ankle',
+                    'right_ankle',
+                ]
+
+            CLASS_SIDE = [
+                    'left',
+                    'right',
+                    'left',
+                    'right',
+                    'left',
+                    'right'
+                ]            
 
         if self.transform:   
             # Converting keypoints from [x,y,visibility]-format to [x, y]-format + Flattening nested list of keypoints            
@@ -40,9 +57,10 @@ class ClassDataset(Dataset):
             # [obj1_kp1, obj1_kp2, obj2_kp1, obj2_kp2, obj3_kp1, obj3_kp2]
             keypoints_original_flattened = [el[0:2] for kp in keypoints_original for el in kp]
             # Apply augmentations
-            transformed = self.transform(image=img_original, bboxes=bboxes_original, bboxes_labels=bboxes_labels_original, keypoints=keypoints_original_flattened)
+            transformed = self.transform(image=img_original, bboxes=bboxes_original, bboxes_labels=bboxes_labels_original, keypoints=keypoints_original_flattened, keypoints_labels=CLASS_LABEL, keypoints_sides=CLASS_SIDE)
             img = transformed['image']
             bboxes = transformed['bboxes']
+
             
             # Unflattening list transformed['keypoints']
             # For example, if we have the following list of keypoints for three objects (each object has two keypoints):
@@ -51,6 +69,8 @@ class ClassDataset(Dataset):
             # [[obj1_kp1, obj1_kp2], [obj2_kp1, obj2_kp2], [obj3_kp1, obj3_kp2]]
   
             keypoints_transformed_unflattened = np.reshape(np.array(transformed['keypoints']), (-1,6, 2)).tolist()
+            keypoints_transformed_labels = transformed['keypoints_labels']
+            keypoints_transformed_sides = transformed['keypoints_sides']
 
             # Converting transformed keypoints from [x, y]-format to [x,y,visibility]-format by appending original visibilities to transformed coordinates of keypoints
             keypoints = []
@@ -206,11 +226,18 @@ def get_coco_annotation_from_obj(file_bboxes, file_kpts, id):
 def merge_bboxes_kpts (file_bboxes, file_kpts, save_path):
     tree = ET.parse(file_bboxes)
     root = tree.getroot()
+    width = int(root.findtext('width'))
+    height = int(root.findtext('height'))
     for bndbox in root.iter("bndbox"):
         xmin = int(bndbox.findtext('xmin')) - 1
         ymin = int(bndbox.findtext('ymin')) - 1
         xmax = int(bndbox.findtext('xmax'))
         ymax = int(bndbox.findtext('ymax'))
+        # Resize bbox if xmax or ymax are out of the image
+        if xmax > width:
+            xmax = width
+        if ymax > height:
+            ymax = height
         assert xmax > xmin and ymax > ymin, f"Box size error !: (xmin, ymin, xmax, ymax): {xmin, ymin, xmax, ymax}"
         data_bboxes = [xmin, ymin, xmax, ymax]
        
