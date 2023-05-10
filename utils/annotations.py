@@ -79,6 +79,101 @@ def inference_annotations(
             )
     return orig_image
 
+def inference_annotations_kpts(
+    outputs, 
+    detection_threshold, 
+    classes,
+    kpts,
+    colors, 
+    orig_image, 
+    image, 
+    args
+):
+    height, width, _ = orig_image.shape
+    boxes = outputs[0]['boxes'].data.numpy()
+    keypoints = outputs[0]['keypoints'].data.numpy()
+    scores = outputs[0]['scores'].data.numpy()
+    # Filter out boxes according to `detection_threshold`.
+    boxes = boxes[scores >= detection_threshold].astype(np.int32)
+      # Filter out boxes according to area
+    def area (box):
+      a = (box[2]-box[0])*(box[3]-box[1]) 
+      return a
+    
+    if len(boxes) != 0:
+      max_area_ = boxes[0]
+      for box in boxes:
+        if area(box) > area(max_area_):
+          max_area_ = box
+      boxes = [max_area_]
+      
+    draw_boxes = boxes.copy()
+    # Get all the predicited class names.
+    pred_classes = [classes[i] for i in outputs[0]['labels'].cpu().numpy()]
+
+    lw = max(round(sum(orig_image.shape) / 2 * 0.003), 2)  # Line width.
+    tf = max(lw - 1, 1) # Font thickness.
+    
+    # Draw the bounding boxes and write the class name on top of it.
+    for j, box in enumerate(draw_boxes):
+        p1 = (int(box[0]/image.shape[1]*width), int(box[1]/image.shape[0]*height))
+        p2 = (int(box[2]/image.shape[1]*width), int(box[3]/image.shape[0]*height))
+        class_name = pred_classes[j]
+        color = colors[classes.index(class_name)]
+        cv2.rectangle(
+            orig_image,
+            p1, p2,
+            color=color, 
+            thickness=lw,
+            lineType=cv2.LINE_AA
+        )
+        if not args['no_labels']:
+            # For filled rectangle.
+            final_label = class_name + ' ' + str(round(scores[j], 2))
+            w, h = cv2.getTextSize(
+                final_label, 
+                cv2.FONT_HERSHEY_SIMPLEX, 
+                fontScale=lw / 3, 
+                thickness=tf
+            )[0]  # text width, height
+            w = int(w - (0.20 * w))
+            outside = p1[1] - h >= 3
+            p2 = p1[0] + w, p1[1] - h - 3 if outside else p1[1] + h + 3
+            cv2.rectangle(
+                orig_image, 
+                p1, 
+                p2, 
+                color=color, 
+                thickness=-1, 
+                lineType=cv2.LINE_AA
+            )  
+            cv2.putText(
+                orig_image, 
+                final_label, 
+                (p1[0], p1[1] - 5 if outside else p1[1] + h + 2),
+                cv2.FONT_HERSHEY_SIMPLEX, 
+                fontScale=lw / 3.8, 
+                color=(255, 255, 255), 
+                thickness=tf, 
+                lineType=cv2.LINE_AA
+            )
+        # Draw keypoints.
+        for i in range(0, len(kpts)):
+            kpt = keypoints[j][i]
+            if kpt[2] > 0.0:
+                x_coord = int(kpt[0]/image.shape[1]*width)
+                y_coord = int(kpt[1]/image.shape[0]*height)
+                cv2.circle(
+                    orig_image, 
+                    (x_coord, y_coord), 
+                    radius=3, 
+                    color=(0, 0, 255), 
+                    thickness=-1, 
+                    lineType=cv2.LINE_AA
+                )
+
+    return orig_image
+
 def draw_text(
         img,
         text,

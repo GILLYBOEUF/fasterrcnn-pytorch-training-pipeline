@@ -33,23 +33,37 @@ def log(content, *args):
     logger.info(content)
 
 def coco_log(log_dir, stats):
-    log_dict_keys = [
-        'Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ]',
-        'Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ]',
-        'Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ]',
-        'Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ]',
-        'Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ]',
-        'Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ]',
-        'Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ]',
-        'Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ]',
-        'Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ]',
-        'Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ]',
-        'Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ]',
-        'Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ]',
-    ]
+    if len(stats) == 10: #if coco eval is for coco keypoints
+        log_dict_keys = [
+                    'Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ]',
+                    'Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ]',
+                    'Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ]',
+                    'Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ]',
+                    'Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ]',
+                    'Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ]',
+                    'Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ]',
+                    'Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ]',
+                    'Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ]',
+                    'Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ]',
+                ]
+    else:   #if coco eval is for coco bbox detection
+        log_dict_keys = [
+            'Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ]',
+            'Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ]',
+            'Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ]',
+            'Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ]',
+            'Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ]',
+            'Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ]',
+            'Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ]',
+            'Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ]',
+            'Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ]',
+            'Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ]',
+            'Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ]',
+            'Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ]',
+        ]
     log_dict = {}
-    # for i, key in enumerate(log_dict_keys):
-    #     log_dict[key] = stats[i]
+    for i, key in enumerate(log_dict_keys):
+        log_dict[key] = stats[i]
 
     with open(f"{log_dir}/train.log", 'a+') as f:
         f.writelines('\n')
