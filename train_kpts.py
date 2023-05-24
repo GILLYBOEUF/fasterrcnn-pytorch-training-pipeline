@@ -18,7 +18,7 @@ import torchvision
 from torchvision.models.detection.rpn import AnchorGenerator
 from torchvision.transforms import functional as F
 
-from torch_utils.engine import (
+from keypoint_rcnn.engine import (
     train_one_epoch, evaluate, utils
 )
 from torch.utils.data import (
@@ -234,24 +234,6 @@ def main(args):
 
     train_dataset = ClassDataset(KEYPOINTS_FOLDER_TRAIN, transform=train_transform(), demo=False)
     valid_dataset = ClassDataset(KEYPOINTS_FOLDER_VAL, transform=test_transform(), demo=False)
-    # test_dataset = ClassDataset(KEYPOINTS_FOLDER_TEST, transform=test_transform(), demo=False)
-    
-    # train_dataset = create_train_dataset(
-    #     TRAIN_DIR_IMAGES, 
-    #     TRAIN_DIR_LABELS,
-    #     IMAGE_SIZE, 
-    #     CLASSES,
-    #     use_train_aug=args['use_train_aug'],
-    #     no_mosaic=args['no_mosaic'],
-    #     square_training=args['square_training']
-    # )
-    # valid_dataset = create_valid_dataset(
-    #     VALID_DIR_IMAGES, 
-    #     VALID_DIR_LABELS, 
-    #     IMAGE_SIZE, 
-    #     CLASSES,
-    #     square_training=args['square_training']
-    # )
 
     print('Creating data loaders')
     if args['distributed']:
@@ -267,14 +249,6 @@ def main(args):
 
     train_loader = DataLoader(train_dataset, batch_size=3, shuffle=True, collate_fn=collate_fn)
     valid_loader = DataLoader(valid_dataset, batch_size=1, shuffle=False, collate_fn=collate_fn)
-    # test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, collate_fn=collate_fn)
-
-    # train_loader = create_train_loader(
-    #     train_dataset, BATCH_SIZE, NUM_WORKERS, batch_sampler=train_sampler
-    # )
-    # valid_loader = create_valid_loader(
-    #     valid_dataset, BATCH_SIZE, NUM_WORKERS, batch_sampler=valid_sampler
-    # )
 
     print(f"Number of training samples: {len(train_dataset)}")
     print(f"Number of validation samples: {len(valid_dataset)}\n")
@@ -304,7 +278,8 @@ def main(args):
     # iterations till ena and plot graphs for all iterations.
     train_loss_list = []
     loss_cls_list = []
-    loss_kpts_reg_list = []
+    loss_box_reg_list = []
+    loss_keypoint_list = []
     loss_objectness_list = []
     loss_rpn_list = []
     train_loss_list_epoch = []
@@ -346,16 +321,18 @@ def main(args):
 
         # Change output features for keypoint predictor
         # according to current dataset classes.
-        in_features = model.roi_heads.keypoint_predictor.kps_score_lowres.weight.shape[1] # in_features is not directly available for the ConvTranspose2d layer in PyTorch. 
+        in_features = model.roi_heads.keypoint_predictor.kps_score_lowres.weight.shape[0] # in_features is not directly available for the ConvTranspose2d layer in PyTorch. 
                                                                                           # The in_features attribute is typically used with linear layers (e.g., nn.Linear) 
                                                                                           # to represent the number of input features or dimensions.
+        out_features = model.roi_heads.keypoint_predictor.kps_score_lowres.weight.shape[1]
+        deconv_kernel = model.roi_heads.keypoint_predictor.kps_score_lowres.weight.shape[2]
 
-        model.roi_heads.keypoint_predictor.kps_score_lowres = torch.nn.Linear(
-            in_channels=in_features, out_features=NUM_CLASSES*6, bias=True
+        model.roi_heads.keypoint_predictor.kps_score_lowres = torch.nn.ConvTranspose2d(
+            in_channels=in_features, out_channels=out_features, kernel_size=deconv_kernel, padding=deconv_kernel
         )
-        model.roi_heads.keypoint_predictor.kps_score = torch.nn.Linear(
-            in_features=in_features, out_features=NUM_CLASSES*6, bias=True
-        )
+        # model.roi_heads.keypoint_predictor.kps_score = torch.nn.Linear(
+        #     in_features=in_features, out_features=NUM_CLASSES*6, bias=True
+        # )
 
         if args['resume_training']:
             print('RESUMING TRAINING...')
@@ -398,6 +375,7 @@ def main(args):
     # Define the optimizer.
     optimizer = torch.optim.SGD(params, lr=args['lr'], momentum=0.9, nesterov=True)
     # optimizer = torch.optim.AdamW(params, lr=0.0001, weight_decay=0.0005)
+    
     if args['resume_training']: 
         # LOAD THE OPTIMIZER STATE DICTIONARY FROM THE CHECKPOINT.
         print('Loading optimizer state dictionary...')
@@ -423,7 +401,8 @@ def main(args):
 
         _, batch_loss_list, \
             batch_loss_cls_list, \
-            batch_loss_kpts_reg_list, \
+            batch_loss_box_reg_list, \
+            batch_loss_keypoint_list, \
             batch_loss_objectness_list, \
             batch_loss_rpn_list = train_one_epoch(
             model, 
@@ -449,7 +428,8 @@ def main(args):
         # Append the current epoch's batch-wise losses to the `train_loss_list`.
         train_loss_list.extend(batch_loss_list)
         loss_cls_list.append(np.mean(np.array(batch_loss_cls_list,)))
-        loss_kpts_reg_list.append(np.mean(np.array(batch_loss_kpts_reg_list)))
+        loss_box_reg_list.append(np.mean(np.array(batch_loss_box_reg_list)))
+        loss_keypoint_list.append(np.mean(np.array(batch_loss_keypoint_list)))
         loss_objectness_list.append(np.mean(np.array(batch_loss_objectness_list)))
         loss_rpn_list.append(np.mean(np.array(batch_loss_rpn_list)))
 
@@ -478,7 +458,14 @@ def main(args):
         )
         save_loss_plot(
             OUT_DIR, 
-            loss_kpts_reg_list, 
+            loss_box_reg_list, 
+            'epochs', 
+            'loss bbox reg',
+            save_name='train_loss_bbox_reg'
+        )
+        save_loss_plot(
+            OUT_DIR, 
+            loss_keypoint_list, 
             'epochs', 
             'loss kpts reg',
             save_name='train_loss_kpts_reg'
@@ -494,8 +481,8 @@ def main(args):
             OUT_DIR,
             loss_rpn_list,
             'epochs',
-            'loss rpn kpts',
-            save_name='train_loss_rpn_kpts'
+            'loss rpn bbox',
+            save_name='train_loss_rpn_bbox'
         )
 
         # Save mAP plots.
@@ -529,9 +516,10 @@ def main(args):
             epoch,
             train_loss_list,
             loss_cls_list,
-            loss_kpts_reg_list,
+            loss_box_reg_list,
             loss_objectness_list,
-            loss_rpn_list
+            loss_rpn_list,
+            loss_keypoint_list
         )
 
         # WandB logging.
@@ -540,13 +528,14 @@ def main(args):
                 train_loss_hist.value,
                 batch_loss_list,
                 loss_cls_list,
-                loss_kpts_reg_list,
+                loss_box_reg_list,
                 loss_objectness_list,
                 loss_rpn_list,
                 stats[1],
                 stats[0],
                 val_pred_image,
-                IMAGE_SIZE
+                IMAGE_SIZE,
+                loss_keypoint_list
             )
 
         # Save the current epoch model state. This can be used 
@@ -585,3 +574,4 @@ def main(args):
 if __name__ == '__main__':
     args = parse_opt()
     main(args)
+
