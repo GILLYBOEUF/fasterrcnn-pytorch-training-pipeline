@@ -35,16 +35,16 @@ def log(content, *args):
 def coco_log(log_dir, stats):
     if len(stats) == 10: #if coco eval is for coco keypoints
         log_dict_keys = [
-                    'Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ]',
-                    'Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ]',
-                    'Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ]',
-                    'Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ]',
-                    'Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ]',
-                    'Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ]',
-                    'Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ]',
-                    'Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ]',
-                    'Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ]',
-                    'Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ]',
+                    'Average Precision  (AP) @[ OKS=0.50:0.95 | area=   all | maxDets=100 ]', # primary challenge metric
+                    'Average Precision  (AP) @[ OKS=0.50      | area=   all | maxDets=100 ]', # loose metric
+                    'Average Precision  (AP) @[ OKS=0.75      | area=   all | maxDets=100 ]', # strict metric
+                    'AP Across Scales  (AP) @[ OKS=0.50:0.95 | area=medium (322 < area < 962) | maxDets=100 ]',
+                    'AP Across Scales  (AP) @[ OKS=0.50:0.95 | area= large (area > 962) | maxDets=100 ]',
+                    'Average Recall     (AR) @[ OKS=0.50:0.95 | area=   all | maxDets=  1 ]',
+                    'Average Recall     (AR) @[ OKS=0.50:0.95 | area=   all | maxDets= 10 ]',
+                    'Average Recall     (AR) @[ OKS=0.50:0.95 | area=   all | maxDets=100 ]',
+                    'AR Across Scales     (AR) @[ OKS=0.50:0.95 | area=medium (322 < area < 962) | maxDets=100 ]',
+                    'AR Across Scales     (AR) @[ OKS=0.50:0.95 | area= large (area > 962) | maxDets=100 ]',
                 ]
     else:   #if coco eval is for coco bbox detection
         log_dict_keys = [
@@ -94,19 +94,35 @@ def tensorboard_map_log(name, val_map_05, val_map, writer, epoch):
         epoch
     )
 
-def create_log_csv(log_dir):
-    cols = [
-        'epoch', 
-        'map', 
-        'map_05',
-        'train loss',
-        'train cls loss',
-        'train box reg loss',
-        'train obj loss',
-        'train rpn loss'
-    ]
-    results_csv = pd.DataFrame(columns=cols)
-    results_csv.to_csv(os.path.join(log_dir, 'results.csv'), index=False)
+def create_log_csv(log_dir, keypoint=False):
+    if keypoint:
+        cols = [
+            'epoch', 
+            'map', 
+            'map_05',
+            'train loss',
+            'train cls loss',
+            'train box reg loss',
+            'train keypoint loss',
+            'train obj loss',
+            'train rpn loss'
+        ]
+        results_csv = pd.DataFrame(columns=cols)
+        results_csv.to_csv(os.path.join(log_dir, 'results.csv'), index=False)
+        return
+    else:
+        cols = [
+            'epoch', 
+            'map', 
+            'map_05',
+            'train loss',
+            'train cls loss',
+            'train box reg loss',
+            'train obj loss',
+            'train rpn loss'
+        ]
+        results_csv = pd.DataFrame(columns=cols)
+        results_csv.to_csv(os.path.join(log_dir, 'results.csv'), index=False)
 
 def csv_log(
     log_dir, 
@@ -116,12 +132,17 @@ def csv_log(
     loss_cls_list,
     loss_box_reg_list,
     loss_objectness_list,
-    loss_rpn_list
+    loss_rpn_list,
+    loss_keypoint_list=None
 ):
-    if epoch+1 == 1:
-        create_log_csv(log_dir) 
+    if epoch+1 == 1 and loss_keypoint_list is not None:
+        create_log_csv(log_dir, keypoint=True)
+
+    elif epoch+1 == 1 and loss_keypoint_list is None:
+        create_log_csv(log_dir, keypoint=False) 
     
-    df = pd.DataFrame(
+    if loss_keypoint_list is not None:
+        df = pd.DataFrame(
         {
             'epoch': int(epoch+1),
             'map_05': [float(stats[0])],
@@ -129,10 +150,25 @@ def csv_log(
             'train loss': train_loss_list[-1],
             'train cls loss': loss_cls_list[-1],
             'train box reg loss': loss_box_reg_list[-1],
+            'train keypoint loss': loss_keypoint_list[-1],
             'train obj loss': loss_objectness_list[-1],
             'train rpn loss': loss_rpn_list[-1]
         }
     )
+
+    else:   
+        df = pd.DataFrame(
+            {
+                'epoch': int(epoch+1),
+                'map_05': [float(stats[0])],
+                'map': [float(stats[1])],
+                'train loss': train_loss_list[-1],
+                'train cls loss': loss_cls_list[-1],
+                'train box reg loss': loss_box_reg_list[-1],
+                'train obj loss': loss_objectness_list[-1],
+                'train rpn loss': loss_rpn_list[-1]
+            }
+        )
     df.to_csv(
         os.path.join(log_dir, 'results.csv'), 
         mode='a', 
@@ -159,7 +195,8 @@ def wandb_log(
     val_map_05, 
     val_map,
     val_pred_image,
-    image_size
+    image_size,
+    loss_keypoint_list=None
 ):
     """
     :param epoch_loss: Single loss value for the current epoch.
@@ -174,14 +211,26 @@ def wandb_log(
             {'train_loss_iter': loss_list_batch[i],},
         )
     # for i in range(len(loss_cls_list)):
-    wandb.log(
-        {
-            'train_loss_cls': loss_cls_list[-1],
-            'train_loss_box_reg': loss_box_reg_list[-1],
-            'train_loss_obj': loss_objectness_list[-1],
-            'train_loss_rpn': loss_rpn_list[-1]
-        }
-    )
+    if loss_keypoint_list is not None:
+        wandb.log(
+            {
+                'train_loss_cls': loss_cls_list[-1],
+                'train_loss_box_reg': loss_box_reg_list[-1],
+                'train_loss_keypoint': loss_keypoint_list[-1],
+                'train_loss_obj': loss_objectness_list[-1],
+                'train_loss_rpn': loss_rpn_list[-1]
+            }
+        )
+
+    else:
+        wandb.log(
+            {
+                'train_loss_cls': loss_cls_list[-1],
+                'train_loss_box_reg': loss_box_reg_list[-1],
+                'train_loss_obj': loss_objectness_list[-1],
+                'train_loss_rpn': loss_rpn_list[-1]
+            }
+        )
     wandb.log(
         {
             'train_loss_epoch': epoch_loss
