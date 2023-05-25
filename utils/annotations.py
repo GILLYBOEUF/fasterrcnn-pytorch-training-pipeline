@@ -83,7 +83,6 @@ def inference_annotations_kpts(
     outputs, 
     detection_threshold, 
     classes,
-    kpts,
     colors, 
     orig_image, 
     image, 
@@ -95,6 +94,8 @@ def inference_annotations_kpts(
     scores = outputs[0]['scores'].data.numpy()
     # Filter out boxes according to `detection_threshold`.
     boxes = boxes[scores >= detection_threshold].astype(np.int32)
+    # Filter out keypoints according to 'detection_threshold`
+    keypoints = keypoints[scores >= detection_threshold].astype(np.int32)
       # Filter out boxes according to area
     def area (box):
       a = (box[2]-box[0])*(box[3]-box[1]) 
@@ -158,7 +159,7 @@ def inference_annotations_kpts(
                 lineType=cv2.LINE_AA
             )
         # Draw keypoints.
-        for i in range(0, len(kpts)):
+        for i in range(0, len(keypoints[0])):
             kpt = keypoints[j][i]
             if kpt[2] > 0.0:
                 x_coord = int(kpt[0]/image.shape[1]*width)
