@@ -9,7 +9,7 @@ import yaml
 import matplotlib.pyplot as plt
 
 from models.create_fasterrcnn_model import create_model
-from utils.annotations import inference_annotations
+from utils.annotations import inference_annotations_kpts
 from utils.general import set_infer_dir
 from utils.transforms import infer_transforms, resize
 
