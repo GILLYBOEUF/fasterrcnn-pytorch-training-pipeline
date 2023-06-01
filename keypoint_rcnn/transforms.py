@@ -290,7 +290,8 @@ def train_transform():
             #A.pytorch.transforms.ToTensorV2 (transpose_mask=False, always_apply=True, p=1.0),
             A.RandomRotate90(p=1), # Random rotation of an image by 90 degrees zero or more times
             A.RandomBrightnessContrast(brightness_limit=0.3, contrast_limit=0.3, brightness_by_max=True, always_apply=False, p=1), # Random change of brightness & contrast
-            A.augmentations.geometric.resize.LongestMaxSize (max_size=256, interpolation=1, always_apply=True, p=1)
+            A.augmentations.geometric.resize.LongestMaxSize (max_size=256, interpolation=1, always_apply=True, p=1),
+            A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
         ], p=1)
     ],
     keypoint_params=A.KeypointParams(format='xy'), # More about keypoint formats used in albumentations library read at https://albumentations.ai/docs/getting_started/keypoints_augmentation/
@@ -301,7 +302,8 @@ def test_transform():
   return A.Compose([
         A.Sequential([
             #A.pytorch.transforms.ToTensorV2 (transpose_mask=False, always_apply=True, p=1.0),
-            A.augmentations.geometric.resize.LongestMaxSize (max_size=256, interpolation=1, always_apply=True, p=1)
+            A.augmentations.geometric.resize.LongestMaxSize (max_size=256, interpolation=1, always_apply=True, p=1),
+            A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
         ], p=1)
     ],
     keypoint_params=A.KeypointParams(format='xy'), # More about keypoint formats used in albumentations library read at https://albumentations.ai/docs/getting_started/keypoints_augmentation/
