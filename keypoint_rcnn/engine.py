@@ -41,8 +41,15 @@ def train_one_epoch(
         warmup_factor = 1.0 / 1000
         warmup_iters = min(1000, len(data_loader) - 1)
 
-        lr_scheduler = torch.optim.lr_scheduler.LinearLR(
-            optimizer, start_factor=warmup_factor, total_iters=warmup_iters
+        #lr_scheduler = torch.optim.lr_scheduler.LinearLR(
+        #    optimizer, start_factor=warmup_factor, total_iters=warmup_iters
+        #)
+        
+        train_lr_step = [90, 110] # [16, 22]
+        train_lr_factor = 0.1
+        lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
+            optimizer, train_lr_step, train_lr_factor,
+            last_epoch=-1
         )
     step_counter = 0
     for images, targets in metric_logger.log_every(data_loader, print_freq, header):
