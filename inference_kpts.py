@@ -119,7 +119,7 @@ def main(args):
             build_model = create_model[args['model']]
             model, coco_model = build_model(num_classes=NUM_CLASSES, coco_model=True)
         except:
-            build_model = create_model['fasterrcnn_resnet50_fpn_v2']
+            build_model = create_model['keypointrcnn_resnet50_fpn']
             model, coco_model = build_model(num_classes=NUM_CLASSES, coco_model=True)
     # Load weights if path provided.
     if args['weights'] is not None:
